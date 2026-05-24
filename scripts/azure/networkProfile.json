@@ -17,16 +17,18 @@
         "containerNetworkInterfaceConfigurations": [
           {
             "name": "eth0",
-            "ipConfigurations": [
-              {
-                "name": "ipconfig1",
-                "properties": {
-                  "subnet": {
-                    "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('subnetName'))]"
+            "properties": {
+              "ipConfigurations": [
+                {
+                  "name": "ipconfig1",
+                  "properties": {
+                    "subnet": {
+                      "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('subnetName'))]"
+                    }
                   }
                 }
-              }
-            ]
+              ]
+            }
           }
         ]
       }
