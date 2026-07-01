@@ -33,3 +33,60 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Java / Maven
+/target/
+**/target/
+/backend/target/
+*.class
+*.jar
+*.war
+*.ear
+*.iml
+.project
+.settings/
+.classpath
+
+# IDE
+*.idea/
+*.idea/*
+!.idea/extensions.xml
+.vscode/
+
+# H2 / DB files
+*.db
+*.h2.db
+
+# Build tool wrappers
+.mvn/
+!/.mvn/wrapper/maven-wrapper.jar
+
+# Temporary files
+*.tmp
+*.temp
+
+# keys and secrets
+*.keystore
+*.jks
+.env.local
+
+# Ignore test output and reports
+/target/surefire-reports/
+/target/failsafe-reports/
+
+# node
+node_modules/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# local config
+local.properties
+
+# Maven local repository (optional; usually not ignored)
+# ~/.m2/repository/
