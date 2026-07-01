@@ -19,12 +19,14 @@ public class CartController {
     private final CartRepository cartRepository;
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
+    private final CheckoutService checkoutService;
 
-    public CartController(ProductRepository productRepository, CartRepository cartRepository, UserRepository userRepository, OrderRepository orderRepository) {
+    public CartController(ProductRepository productRepository, CartRepository cartRepository, UserRepository userRepository, OrderRepository orderRepository, CheckoutService checkoutService) {
         this.productRepository = productRepository;
         this.cartRepository = cartRepository;
         this.userRepository = userRepository;
         this.orderRepository = orderRepository;
+        this.checkoutService = checkoutService;
     }
 
     @GetMapping("/cart")
@@ -106,43 +108,15 @@ public class CartController {
             // require login
             return "redirect:/auth?next=/cart";
         }
-        var user = userRepository.findById(userId).orElseThrow();
-        var cart = cartRepository.findByUser(user).orElse(null);
-        if (cart == null || cart.getItems().isEmpty()) {
-            model.addAttribute("error", "Cart is empty");
+        try {
+            var order = checkoutService.checkoutForUser(userId);
+            model.addAttribute("order", order);
+            session.removeAttribute("cart");
+            return "order-confirmation";
+        } catch (IllegalStateException e) {
+            model.addAttribute("error", e.getMessage());
             return "cart";
         }
-
-        // create order
-        com.gkshoppy.model.Order order = new com.gkshoppy.model.Order();
-        order.setUser(user);
-        order.setStatus("CREATED");
-        double total = 0.0;
-        for (var ci : cart.getItems()) {
-            var product = ci.getProduct();
-            int qty = ci.getQuantity();
-            com.gkshoppy.model.OrderItem oi = new com.gkshoppy.model.OrderItem();
-            oi.setProduct(product);
-            oi.setQuantity(qty);
-            oi.setPriceAtPurchase(product.getPrice());
-            order.addItem(oi);
-            total += product.getPrice() * qty;
-            // reduce stock
-            if (product.getStockQuantity() != null) {
-                product.setStockQuantity(Math.max(0, product.getStockQuantity() - qty));
-                productRepository.save(product);
-            }
-        }
-        order.setTotal(total);
-        orderRepository.save(order);
-
-        // clear cart
-        cart.getItems().clear();
-        cartRepository.save(cart);
-        session.removeAttribute("cart");
-
-        model.addAttribute("order", order);
-        return "order-confirmation";
     }
 
     @SuppressWarnings("unchecked")

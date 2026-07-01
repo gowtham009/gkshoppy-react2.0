@@ -33,4 +33,27 @@ public class OrderController {
         model.addAttribute("orders", orders);
         return "orders";
     }
+
+    // Simple admin list of all orders — access controlled by a session attribute isAdmin=true
+    @GetMapping("/admin/orders")
+    public String adminOrders(HttpSession session, Model model) {
+        Object isAdmin = session.getAttribute("isAdmin");
+        if (!(isAdmin instanceof Boolean) || !((Boolean) isAdmin)) {
+            return "redirect:/"; // not authorized
+        }
+        List<Order> orders = orderRepository.findAll();
+        model.addAttribute("orders", orders);
+        return "orders";
+    }
+
+    // Update status (admin)
+    @PostMapping("/admin/order/{id}/status")
+    public String updateOrderStatus(@org.springframework.web.bind.annotation.PathVariable Long id, @org.springframework.web.bind.annotation.RequestParam String status, HttpSession session) {
+        Object isAdmin = session.getAttribute("isAdmin");
+        if (!(isAdmin instanceof Boolean) || !((Boolean) isAdmin)) {
+            return "redirect:/";
+        }
+        orderRepository.findById(id).ifPresent(o -> { o.setStatus(status); orderRepository.save(o); });
+        return "redirect:/admin/orders";
+    }
 }

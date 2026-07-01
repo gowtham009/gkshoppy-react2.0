@@ -15,10 +15,12 @@ import jakarta.servlet.http.HttpSession;
 public class AuthController {
 
     private final UserRepository userRepository;
+    private final CartService cartService;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    public AuthController(UserRepository userRepository) {
+    public AuthController(UserRepository userRepository, CartService cartService) {
         this.userRepository = userRepository;
+        this.cartService = cartService;
     }
 
     @GetMapping("/auth")
@@ -43,6 +45,15 @@ public class AuthController {
         u.setPasswordHash(passwordEncoder.encode(password));
         userRepository.save(u);
         session.setAttribute("userId", u.getId());
+        // migrate session cart into persisted cart
+        try { Object c = session.getAttribute("cart");
+            if (c instanceof java.util.Map) {
+                @SuppressWarnings("unchecked") java.util.Map<Long,Integer> map = (java.util.Map<Long,Integer>) c;
+                // call cartService (autowired via constructor)
+                this.cartService.migrateSessionCartToUser(u.getId(), map);
+                session.removeAttribute("cart");
+            }
+        } catch (Exception ex) { /* ignore migration errors */ }
         return "redirect:/profile";
     }
 
