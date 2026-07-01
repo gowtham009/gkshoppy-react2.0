@@ -2,6 +2,10 @@ package com.gkshoppy.controller;
 
 import com.gkshoppy.model.Product;
 import com.gkshoppy.repository.ProductRepository;
+import com.gkshoppy.repository.CartRepository;
+import com.gkshoppy.repository.UserRepository;
+import com.gkshoppy.repository.OrderRepository;
+import com.gkshoppy.service.CheckoutService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
