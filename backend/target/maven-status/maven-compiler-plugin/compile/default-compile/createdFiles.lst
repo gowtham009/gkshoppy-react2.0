@@ -19,6 +19,7 @@ com\gkshoppy\repository\OrderRepository.class
 com\gkshoppy\model\Product.class
 com\gkshoppy\controller\CartController.class
 com\gkshoppy\model\OrderItem.class
+com\gkshoppy\controller\PaymentController.class
 com\gkshoppy\service\SerpApiService.class
 com\gkshoppy\controller\ShopController.class
 com\gkshoppy\repository\UserRepository.class
