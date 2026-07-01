@@ -1,9 +1,18 @@
+version: '3.8'
 services:
-  app:
+  backend:
     build:
-      context: .
+      context: ./backend
+      dockerfile: Dockerfile
+    image: gkshoppy-backend:local
     ports:
-      - "8080:80"
+      - "8080:8080"
     environment:
-      VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
-      VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+      - SPRING_PROFILES_ACTIVE=dev
+      - SERPAPI_KEY=${SERPAPI_KEY}
+      - STRIPE_API_KEY=${STRIPE_API_KEY}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+    volumes:
+      - ./backend/src:/workspace/src
+      - ./backend/pom.xml:/workspace/pom.xml
+    restart: unless-stopped
