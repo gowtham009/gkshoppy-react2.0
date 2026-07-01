@@ -2,6 +2,7 @@ package com.gkshoppy.controller;
 
 import com.gkshoppy.model.User;
 import com.gkshoppy.repository.UserRepository;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -17,11 +18,13 @@ public class AuthController {
 
     private final UserRepository userRepository;
     private final CartService cartService;
+    private final AuthenticationManager authenticationManager;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    public AuthController(UserRepository userRepository, CartService cartService) {
+    public AuthController(UserRepository userRepository, CartService cartService, AuthenticationManager authenticationManager) {
         this.userRepository = userRepository;
         this.cartService = cartService;
+        this.authenticationManager = authenticationManager;
     }
 
     @GetMapping("/auth")
@@ -44,39 +47,30 @@ public class AuthController {
         u.setEmail(email);
         u.setUsername(username);
         u.setPasswordHash(passwordEncoder.encode(password));
+        u.setRole("USER");
         userRepository.save(u);
-        session.setAttribute("userId", u.getId());
+
         // migrate session cart into persisted cart
-        try { Object c = session.getAttribute("cart");
+        try {
+            Object c = session.getAttribute("cart");
             if (c instanceof java.util.Map) {
                 @SuppressWarnings("unchecked") java.util.Map<Long,Integer> map = (java.util.Map<Long,Integer>) c;
-                // call cartService (autowired via constructor)
                 this.cartService.migrateSessionCartToUser(u.getId(), map);
                 session.removeAttribute("cart");
             }
         } catch (Exception ex) { /* ignore migration errors */ }
-        return "redirect:/profile";
-    }
 
-    @PostMapping("/auth/login")
-    public String login(@RequestParam String emailOrUsername, @RequestParam String password, HttpSession session, Model model) {
-        User user = userRepository.findByEmail(emailOrUsername).orElse(null);
-        if (user == null) user = userRepository.findByUsername(emailOrUsername).orElse(null);
-        if (user == null) {
-            model.addAttribute("error", "Invalid credentials");
-            return "auth";
+        // Programmatically authenticate the new user so they don't have to login immediately
+        try {
+            org.springframework.security.authentication.UsernamePasswordAuthenticationToken authReq =
+                    new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(username, password);
+            org.springframework.security.core.Authentication auth = authenticationManager.authenticate(authReq);
+            org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(auth);
+        } catch (Exception ex) {
+            // if authentication manager not configured or fails, fallback to session-based userId
+            session.setAttribute("userId", u.getId());
         }
-        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            model.addAttribute("error", "Invalid credentials");
-            return "auth";
-        }
-        session.setAttribute("userId", user.getId());
-        return "redirect:/profile";
-    }
 
-    @GetMapping("/logout")
-    public String logout(HttpSession session) {
-        session.invalidate();
-        return "redirect:/";
+        return "redirect:/profile";
     }
 }
