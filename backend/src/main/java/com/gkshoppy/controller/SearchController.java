@@ -21,13 +21,7 @@ public class SearchController {
         this.serpApiService = serpApiService;
     }
 
-    // Server rendered index with a simple search form
-    @GetMapping("/")
-    public String index() {
-        return "index";
-    }
-
-    // Returns raw JSON from SerpAPI for the provided q parameter
+    // Keep API search endpoint
     @GetMapping(value = "/api/search", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<String> apiSearch(@RequestParam(name = "q") String query) {
@@ -39,5 +33,18 @@ public class SearchController {
         } catch (IOException | InterruptedException e) {
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body("{\"error\":\"" + e.getMessage().replace("\"","\\\"") + "\"}");
         }
+    }
+
+    // Serve shop page (Thymeleaf) using ShopController logic
+    @GetMapping({"/", "/shop"})
+    public String index(model org.springframework.ui.Model model, @RequestParam(value = "category", required = false) String category) {
+        java.util.List<com.gkshoppy.model.Product> products;
+        if (category == null || category.isBlank()) {
+            products = serpApiService == null ? java.util.Collections.emptyList() : java.util.Collections.emptyList();
+        } else {
+            products = java.util.Collections.emptyList();
+        }
+        model.addAttribute("products", products);
+        return "shop";
     }
 }
