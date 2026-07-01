@@ -1,0 +1,8 @@
+E:\Project11\gkshoppy-2.0.0\gkshoppy-2.0.0\backend\auth-service\src\main\java\com\gkshoppy\auth\AuthServiceApplication.java
+E:\Project11\gkshoppy-2.0.0\gkshoppy-2.0.0\backend\auth-service\src\main\java\com\gkshoppy\auth\controller\AuthController.java
+E:\Project11\gkshoppy-2.0.0\gkshoppy-2.0.0\backend\auth-service\src\main\java\com\gkshoppy\auth\dto\LoginRequest.java
+E:\Project11\gkshoppy-2.0.0\gkshoppy-2.0.0\backend\auth-service\src\main\java\com\gkshoppy\auth\dto\RegisterRequest.java
+E:\Project11\gkshoppy-2.0.0\gkshoppy-2.0.0\backend\auth-service\src\main\java\com\gkshoppy\auth\dto\UserResponse.java
+E:\Project11\gkshoppy-2.0.0\gkshoppy-2.0.0\backend\auth-service\src\main\java\com\gkshoppy\auth\entity\UserEntity.java
+E:\Project11\gkshoppy-2.0.0\gkshoppy-2.0.0\backend\auth-service\src\main\java\com\gkshoppy\auth\repository\UserRepository.java
+E:\Project11\gkshoppy-2.0.0\gkshoppy-2.0.0\backend\auth-service\src\main\java\com\gkshoppy\auth\service\AuthService.java

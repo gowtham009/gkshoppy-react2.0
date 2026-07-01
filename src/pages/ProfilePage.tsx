@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Save } from 'lucide-react';
@@ -12,7 +12,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  async function handleSave(e: React.FormEvent) {
+  async function handleSave(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!profile) return;
     setSaving(true);

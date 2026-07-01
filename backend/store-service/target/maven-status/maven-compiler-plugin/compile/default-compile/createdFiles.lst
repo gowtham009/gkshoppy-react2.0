@@ -1,0 +1,5 @@
+com\gkshoppy\store\StoreServiceApplication.class
+com\gkshoppy\store\repository\ProductRepository.class
+com\gkshoppy\store\service\ProductService.class
+com\gkshoppy\store\controller\ProductController.class
+com\gkshoppy\store\entity\Product.class

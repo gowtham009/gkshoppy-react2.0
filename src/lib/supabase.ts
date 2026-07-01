@@ -1,11 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Support runtime injection (Docker) or build-time env vars (local dev)
-const w = window as Window & { __env?: Record<string, string> };
-const supabaseUrl =
-  w.__env?.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey =
-  w.__env?.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
+type SupabaseEnv = {
+  VITE_SUPABASE_URL?: string;
+  VITE_SUPABASE_ANON_KEY?: string;
+};
+
+declare global {
+  interface Window {
+    __env?: SupabaseEnv;
+  }
+}
+
+const w = typeof window !== 'undefined' ? window : undefined;
+const env = (import.meta as ImportMeta & { env?: SupabaseEnv }).env ?? {};
+const supabaseUrl = w?.__env?.VITE_SUPABASE_URL || env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = w?.__env?.VITE_SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');

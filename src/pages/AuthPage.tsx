@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Store } from 'lucide-react';
 
@@ -15,7 +15,7 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
     setLoading(true);
