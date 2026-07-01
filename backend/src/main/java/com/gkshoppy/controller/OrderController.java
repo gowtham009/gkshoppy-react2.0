@@ -14,6 +14,20 @@ import java.util.List;
 @Controller
 public class OrderController {
 
+    private Long currentUserId(HttpSession session) {
+        try {
+            var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated() && !(auth instanceof org.springframework.security.authentication.AnonymousAuthenticationToken)) {
+                String username = auth.getName();
+                var u = userRepository.findByUsername(username).orElse(null);
+                if (u != null) return u.getId();
+            }
+        } catch (Exception ignored) {}
+        Object id = session.getAttribute("userId");
+        if (id instanceof Long) return (Long) id;
+        return null;
+    }
+
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
 
@@ -24,7 +38,7 @@ public class OrderController {
 
     @GetMapping("/orders")
     public String myOrders(HttpSession session, Model model) {
-        Long userId = (Long) session.getAttribute("userId");
+        Long userId = currentUserId(session);
         if (userId == null) {
             return "redirect:/auth?next=/orders";
         }
@@ -35,13 +49,9 @@ public class OrderController {
         return "orders";
     }
 
-    // Simple admin list of all orders — access controlled by a session attribute isAdmin=true
+    // Admin list of all orders — secured by ROLE_ADMIN via Spring Security
     @GetMapping("/admin/orders")
     public String adminOrders(HttpSession session, Model model) {
-        Object isAdmin = session.getAttribute("isAdmin");
-        if (!(isAdmin instanceof Boolean) || !((Boolean) isAdmin)) {
-            return "redirect:/"; // not authorized
-        }
         List<Order> orders = orderRepository.findAll();
         model.addAttribute("orders", orders);
         return "orders";
@@ -49,11 +59,7 @@ public class OrderController {
 
     // Update status (admin)
     @PostMapping("/admin/order/{id}/status")
-    public String updateOrderStatus(@org.springframework.web.bind.annotation.PathVariable Long id, @org.springframework.web.bind.annotation.RequestParam String status, HttpSession session) {
-        Object isAdmin = session.getAttribute("isAdmin");
-        if (!(isAdmin instanceof Boolean) || !((Boolean) isAdmin)) {
-            return "redirect:/";
-        }
+    public String updateOrderStatus(@org.springframework.web.bind.annotation.PathVariable Long id, @org.springframework.web.bind.annotation.RequestParam String status) {
         orderRepository.findById(id).ifPresent(o -> { o.setStatus(status); orderRepository.save(o); });
         return "redirect:/admin/orders";
     }

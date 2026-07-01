@@ -36,7 +36,7 @@ public class CartController {
     @GetMapping("/cart")
     public String cartPage(HttpSession session, Model model) {
         // prefer persisted cart for logged-in users
-        Long userId = (Long) session.getAttribute("userId");
+        Long userId = currentUserId(session);
         Map<Product, Integer> items = new HashMap<>();
         double total = 0.0;
         if (userId != null) {
@@ -59,7 +59,7 @@ public class CartController {
 
     @PostMapping("/cart/add")
     public String addToCart(@RequestParam Long productId, @RequestParam(defaultValue = "1") Integer qty, HttpSession session) {
-        Long userId = (Long) session.getAttribute("userId");
+        Long userId = currentUserId(session);
         if (userId != null) {
             var userOpt = userRepository.findById(userId);
             if (userOpt.isPresent()) {
@@ -89,7 +89,7 @@ public class CartController {
 
     @PostMapping("/cart/remove")
     public String removeFromCart(@RequestParam Long productId, HttpSession session) {
-        Long userId = (Long) session.getAttribute("userId");
+        Long userId = currentUserId(session);
         if (userId != null) {
             userRepository.findById(userId).ifPresent(user -> {
                 cartRepository.findByUser(user).ifPresent(cart -> {
@@ -107,7 +107,7 @@ public class CartController {
 
     @PostMapping("/cart/checkout")
     public String checkout(HttpSession session, Model model) {
-        Long userId = (Long) session.getAttribute("userId");
+        Long userId = currentUserId(session);
         if (userId == null) {
             // require login
             return "redirect:/auth?next=/cart";
@@ -132,5 +132,19 @@ public class CartController {
         Map<Long, Integer> cart = new java.util.HashMap<>();
         session.setAttribute("cart", cart);
         return cart;
+    }
+
+    private Long currentUserId(HttpSession session) {
+        try {
+            var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated() && !(auth instanceof org.springframework.security.authentication.AnonymousAuthenticationToken)) {
+                String username = auth.getName();
+                var u = userRepository.findByUsername(username).orElse(null);
+                if (u != null) return u.getId();
+            }
+        } catch (Exception ignored) {}
+        Object id = session.getAttribute("userId");
+        if (id instanceof Long) return (Long) id;
+        return null;
     }
 }
