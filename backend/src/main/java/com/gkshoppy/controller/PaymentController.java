@@ -40,4 +40,17 @@ public class PaymentController {
             return ResponseEntity.status(500).body(java.util.Map.of("error", "internal_error", "message", ex.getMessage()));
         }
     }
-}
+
+        @org.springframework.web.bind.annotation.GetMapping(path = "/payment/config", produces = "application/json")
+        @ResponseBody
+        public ResponseEntity<?> getConfig() {
+            // Return publishable key for client-side Stripe (optional). Read from env or system property.
+            String publishable = System.getenv("STRIPE_PUBLISHABLE_KEY");
+            if (publishable == null || publishable.isBlank()) {
+                // try spring property fallback
+                publishable = System.getProperty("stripe.publishableKey", "");
+            }
+            return ResponseEntity.ok(java.util.Map.of("publishableKey", publishable));
+        }
+    }
+
