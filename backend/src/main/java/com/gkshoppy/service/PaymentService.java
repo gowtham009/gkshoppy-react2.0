@@ -22,9 +22,22 @@ public class PaymentService {
 
     // Payment scaffold — uses Stripe REST API via HttpClient if stripe.apiKey is configured, otherwise falls back to a local stub
     public boolean processPayment(Order order) {
+        // For synchronous checkout, attempt to create a payment intent and treat creation as success
+        String clientSecret = createPaymentIntent(order);
+        return clientSecret != null;
+    }
+
+    public String createPaymentIntentForAmount(long amountInMinorUnits) {
+        // wrapper for callers who only have amount
+        Order dummy = new Order();
+        dummy.setTotal(amountInMinorUnits / 100.0);
+        return createPaymentIntent(dummy);
+    }
+
+    public String createPaymentIntent(Order order) {
         if (stripeApiKey == null || stripeApiKey.isBlank()) {
-            // No real gateway configured — simulate success
-            return true;
+            // stub: return a placeholder client secret
+            return "stub_client_secret_for_order_" + System.currentTimeMillis();
         }
 
         long amount = Math.max(0, Math.round(order.getTotal() * 100)); // amount in smallest currency unit
@@ -48,14 +61,29 @@ public class PaymentService {
             HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
             int status = resp.statusCode();
             if (status >= 200 && status < 300) {
-                return true;
+                // attempt to parse client_secret from response
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                try {
+                    com.fasterxml.jackson.databind.JsonNode node = mapper.readTree(resp.body());
+                    if (node.has("client_secret")) {
+                        return node.get("client_secret").asText();
+                    }
+                    if (node.has("id")) {
+                        return node.get("id").asText();
+                    }
+                } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+                    // ignore parsing issues
+                    return "created";
+                }
+                return "created";
             } else {
                 // log resp.body() in real app
-                return false;
+                return null;
             }
         } catch (IOException | InterruptedException e) {
             Thread.currentThread().interrupt();
-            return false;
+            return null;
         }
     }
 }
+
