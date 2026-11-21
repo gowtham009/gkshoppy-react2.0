@@ -1,4 +1,4 @@
-import { ShoppingCart, Store, User, LogOut, Heart, Package } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Package } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 
