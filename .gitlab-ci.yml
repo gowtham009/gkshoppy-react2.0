@@ -1,0 +1,33 @@
+stages:
+  - build
+  - publish
+
+variables:
+  MAVEN_CLI_OPTS: "-s settings.xml --batch-mode"
+  DOCKER_DRIVER: overlay2
+
+build:
+  image: docker:24.0.2
+  stage: build
+  services:
+    - name: docker:24.0.2-dind
+      alias: docker
+  before_script:
+    - apk add --no-cache openjdk17-jdk maven git bash curl
+    - echo "Logging in to GitLab Container Registry"
+    - echo $CI_JOB_TOKEN | docker login -u gitlab-ci-token --password-stdin $CI_REGISTRY
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA -f backend/Dockerfile backend
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE:latest
+    - docker push $CI_REGISTRY_IMAGE:latest
+  only:
+    - branches
+
+# Optionally add a job to deploy (left as a placeholder)
+# deploy:
+#   stage: publish
+#   script:
+#     - echo "Deploy step - configure your deployment here"
+#   only:
+#     - main

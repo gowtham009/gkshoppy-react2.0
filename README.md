@@ -60,3 +60,16 @@ AWS_REGION=us-east-1
 ```
 
 The deployment outputs `UserPoolId` and `ApiFunctionName` in `aws-outputs.json`. The AWS identity running the script needs permission to invoke that Lambda and administer users in the new Cognito pool. The migration script reads the Supabase service-role key from the process environment only; do not put it in a committed file. Take a database backup and verify the imported records before directing production traffic to the new API.
+
+## Optional Spring Boot application
+
+The `backend/` directory contains a separate Spring Boot/Thymeleaf application with its own H2 development database, authentication, cart/order flows, and payment/search scaffolding. It is not the API used by the React storefront; the React app continues to call the AWS API configured by `VITE_API_URL`.
+
+Run the backend locally with Java 17 and Maven:
+
+```bash
+cd backend
+mvn -B spring-boot:run
+```
+
+In Docker Compose, the React storefront is available on port `8080` and this optional backend on port `8081`. The backend accepts `SERPAPI_KEY` and `STRIPE_API_KEY` from the local environment. Stripe webhook signature verification is not implemented, so do not use its payment scaffold in production without completing that work.

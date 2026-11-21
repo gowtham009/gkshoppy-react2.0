@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gkshoppy
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gkshoppy-config
+  namespace: gkshoppy
+data:
+  # example values - override in Kubernetes secrets or environment
+  SPRING_PROFILES_ACTIVE: "prod"
+  SERPAPI_KEY: ""
+  STRIPE_PUBLISHABLE_KEY: ""
