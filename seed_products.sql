@@ -1,5 +1,5 @@
--- GK Shoppy — Paper Craft Products Seed
--- Run this in Supabase SQL Editor after running supabase_migration.sql
+-- GK Shoppy paper craft product seed.
+-- Run against the GKShoppy PostgreSQL database after infra/sql/schema.sql.
 
 INSERT INTO products (name, price, description, stock_quantity, image_url, category) VALUES
 

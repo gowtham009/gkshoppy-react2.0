@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import { apiRequest } from '../lib/api';
 import { Save } from 'lucide-react';
 
 export default function ProfilePage() {
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const [fullName, setFullName] = useState(profile?.full_name ?? '');
   const [phone, setPhone] = useState(profile?.phone_number ?? '');
   const [shipping, setShipping] = useState(profile?.shipping_address ?? '');
@@ -16,15 +16,24 @@ export default function ProfilePage() {
     e.preventDefault();
     if (!profile) return;
     setSaving(true);
-    await supabase.from('users').update({
-      full_name: fullName,
-      phone_number: phone,
-      shipping_address: shipping,
-      billing_address: billing,
-    }).eq('id', profile.id);
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    try {
+      await apiRequest('/profile', {
+        method: 'PUT',
+        body: JSON.stringify({
+          fullName,
+          phoneNumber: phone,
+          shippingAddress: shipping,
+          billingAddress: billing,
+        }),
+      });
+      await refreshProfile();
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : 'Unable to save profile.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (!profile) return null;

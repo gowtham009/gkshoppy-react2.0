@@ -2,6 +2,7 @@ node_modules/
 dist/
 .env
 .env.*
+!.env.example
 .DS_Store
 .vite/
 .idea/
@@ -17,6 +18,10 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+infra/node_modules/
+infra/cdk.out/
+infra/*.tsbuildinfo
+/aws-outputs.json
 
 node_modules
 dist

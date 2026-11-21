@@ -7,7 +7,9 @@ services:
     plan: free
     dockerfilePath: Dockerfile
     envVars:
-      - key: VITE_SUPABASE_URL
-        fromSecret: VITE_SUPABASE_URL
-      - key: VITE_SUPABASE_ANON_KEY
-        fromSecret: VITE_SUPABASE_ANON_KEY
+      - key: VITE_API_URL
+        fromSecret: VITE_API_URL
+      - key: VITE_AWS_REGION
+        value: us-east-1
+      - key: VITE_COGNITO_CLIENT_ID
+        fromSecret: VITE_COGNITO_CLIENT_ID

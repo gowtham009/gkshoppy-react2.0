@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
+import { apiRequest } from '../lib/api';
 import { Product } from '../types';
 import ProductCard from '../components/ProductCard';
 import ProductModal from '../components/ProductModal';
 import Toast, { ToastMessage } from '../components/Toast';
 import { Search, SlidersHorizontal, Heart, LayoutGrid, List, ChevronDown, ShoppingCart } from 'lucide-react';
-import { useCart } from '../contexts/CartContext';
+import { useCart } from '../contexts/useCart';
 import { useAuth } from '../contexts/AuthContext';
 
 interface HomePageProps { onAuthRequired: () => void; }
@@ -19,7 +19,7 @@ const SORT_OPTIONS = [
 
 export default function HomePage({ onAuthRequired }: HomePageProps) {
   const { addToCart } = useCart();
-  const { supabaseUser } = useAuth();
+  const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -34,23 +34,31 @@ export default function HomePage({ onAuthRequired }: HomePageProps) {
   const [maxPrice, setMaxPrice] = useState(2000);
   const [showFilters, setShowFilters] = useState(false);
   const [inStockOnly, setInStockOnly] = useState(false);
-
-  useEffect(() => { fetchProducts(); }, []);
-
-  async function fetchProducts() {
-    setLoading(true);
-    const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-    const prods = (data as Product[]) || [];
-    setProducts(prods);
-    const cats = Array.from(new Set(prods.map(p => p.category).filter(Boolean))) as string[];
-    setCategories(cats.sort());
-    setLoading(false);
-  }
+  const [loadError, setLoadError] = useState('');
 
   const addToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
     const id = Math.random().toString(36).slice(2);
     setToasts(prev => [...prev, { id, type, message }]);
   }, []);
+
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const prods = await apiRequest<Product[]>('/products', {}, false);
+      setProducts(prods);
+      const cats = Array.from(new Set(prods.map(p => p.category).filter(Boolean))) as string[];
+      setCategories(cats.sort());
+      setLoadError('');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unable to load products.';
+      setLoadError(message);
+      addToast(message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [addToast]);
+
+  useEffect(() => { void fetchProducts(); }, [fetchProducts]);
 
   const removeToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));
@@ -66,9 +74,13 @@ export default function HomePage({ onAuthRequired }: HomePageProps) {
   }
 
   async function handleQuickAdd(product: Product) {
-    if (!supabaseUser) { onAuthRequired(); return; }
-    await addToCart(product);
-    addToast(`${product.name.slice(0, 30)}… added to cart 🛒`);
+    if (!user) { onAuthRequired(); return; }
+    try {
+      await addToCart(product);
+      addToast(`${product.name.slice(0, 30)}… added to cart 🛒`);
+    } catch (error: unknown) {
+      addToast(error instanceof Error ? error.message : 'Unable to add item to cart.', 'error');
+    }
   }
 
   const filtered = products
@@ -192,11 +204,11 @@ export default function HomePage({ onAuthRequired }: HomePageProps) {
       ) : filtered.length === 0 ? (
         <div className="text-center py-20">
           <Search size={48} className="mx-auto mb-3 text-gray-200" />
-          <p className="text-lg font-semibold text-gray-700">No products found</p>
-          <p className="text-sm text-gray-400 mt-1">Try adjusting your search or filters</p>
+          <p className="text-lg font-semibold text-gray-700">{loadError ? 'Products are unavailable' : 'No products found'}</p>
+          <p className="text-sm text-gray-400 mt-1">{loadError || 'Try adjusting your search or filters'}</p>
           {products.length === 0 && (
             <p className="text-sm mt-4 text-indigo-500 bg-indigo-50 inline-block px-4 py-2 rounded-lg">
-              Run <code className="font-mono">seed_products.sql</code> in Supabase SQL Editor to add products
+              Run <code className="font-mono">seed_products.sql</code> against the GKShoppy database to add products
             </p>
           )}
         </div>

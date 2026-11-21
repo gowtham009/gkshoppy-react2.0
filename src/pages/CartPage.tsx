@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Minus, Plus, Trash2, ShoppingBag, Tag, ArrowRight } from 'lucide-react';
-import { useCart } from '../contexts/CartContext';
+import { useCart } from '../contexts/useCart';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import { apiRequest } from '../lib/api';
 
 interface CartPageProps { onNavigate: (page: string) => void; }
 
 export default function CartPage({ onNavigate }: CartPageProps) {
-  const { items, total, removeFromCart, updateQuantity, clearCart } = useCart();
-  const { supabaseUser } = useAuth();
+  const { items, total, removeFromCart, updateQuantity, clearCart, refreshCart } = useCart();
+  const { user } = useAuth();
   const [coupon, setCoupon] = useState('');
   const [discount, setDiscount] = useState(0);
   const [couponMsg, setCouponMsg] = useState('');
@@ -33,25 +33,29 @@ export default function CartPage({ onNavigate }: CartPageProps) {
   const shipping = total >= 499 ? 0 : 49;
   const finalTotal = total - discountAmount + shipping;
 
+  async function handleCartAction(action: () => Promise<void>) {
+    try {
+      await action();
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : 'Unable to update your cart.');
+    }
+  }
+
   async function handleCheckout() {
-    if (!supabaseUser || items.length === 0) return;
+    if (!user || items.length === 0) return;
     setPlacing(true);
-    const { data: order, error } = await supabase
-      .from('orders')
-      .insert({ user_id: supabaseUser.id, total_amount: finalTotal, status: 'pending' })
-      .select('id').single();
-    if (error || !order) { setPlacing(false); alert('Checkout failed. Please try again.'); return; }
-    await supabase.from('order_items').insert(
-      items.map(item => ({
-        order_id: order.id,
-        product_id: item.product_id,
-        quantity: item.quantity,
-        price_at_time_of_purchase: item.product?.price ?? 0,
-      }))
-    );
-    await clearCart();
-    setPlacing(false);
-    onNavigate('orders');
+    try {
+      await apiRequest('/orders', {
+        method: 'POST',
+        body: JSON.stringify({ couponCode: discount > 0 ? coupon.trim() : null }),
+      });
+      await refreshCart();
+      onNavigate('orders');
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : 'Checkout failed. Please try again.');
+    } finally {
+      setPlacing(false);
+    }
   }
 
   if (items.length === 0) {
@@ -88,19 +92,19 @@ export default function CartPage({ onNavigate }: CartPageProps) {
                 <p className="text-sm text-gray-500">₹{item.product?.price.toFixed(2)} each</p>
               </div>
               <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden">
-                <button onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                <button onClick={() => void handleCartAction(() => updateQuantity(item.id, item.quantity - 1))}
                   className="px-2.5 py-1.5 hover:bg-gray-50 text-gray-600"><Minus size={12} /></button>
                 <span className="px-3 py-1.5 text-sm font-semibold border-x border-gray-200 min-w-[2rem] text-center">{item.quantity}</span>
-                <button onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                <button onClick={() => void handleCartAction(() => updateQuantity(item.id, item.quantity + 1))}
                   className="px-2.5 py-1.5 hover:bg-gray-50 text-gray-600"><Plus size={12} /></button>
               </div>
               <span className="font-bold text-gray-900 w-20 text-right">₹{((item.product?.price ?? 0) * item.quantity).toFixed(2)}</span>
-              <button onClick={() => removeFromCart(item.id)} className="text-gray-300 hover:text-red-500 transition-colors">
+              <button onClick={() => void handleCartAction(() => removeFromCart(item.id))} className="text-gray-300 hover:text-red-500 transition-colors">
                 <Trash2 size={16} />
               </button>
             </div>
           ))}
-          <button onClick={clearCart} className="text-sm text-gray-400 hover:text-red-500 transition-colors mt-2">
+          <button onClick={() => void handleCartAction(clearCart)} className="text-sm text-gray-400 hover:text-red-500 transition-colors mt-2">
             Clear cart
           </button>
         </div>
@@ -148,7 +152,7 @@ export default function CartPage({ onNavigate }: CartPageProps) {
               </div>
             </div>
 
-            {supabaseUser ? (
+            {user ? (
               <button onClick={handleCheckout} disabled={placing}
                 className="mt-4 w-full flex items-center justify-center gap-2 bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-60 transition-colors">
                 {placing ? 'Placing Order…' : <><span>Place Order</span><ArrowRight size={16} /></>}

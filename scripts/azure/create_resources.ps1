@@ -33,4 +33,4 @@ Set-Content -Path "azure_sp_$ACR.json" -Value $spJson
 
 Write-Host "`nOptionally enable ACR admin user:`n az acr update -n $ACR -g $RG --admin-enabled true`n az acr credential show -n $ACR -g $RG"
 
-Write-Host "`nAdd these secrets to GitHub: AZURE_CREDENTIALS, ACR_NAME, AZURE_WEBAPP_NAME, AZURE_RESOURCE_GROUP, VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY"
+Write-Host "`nAdd these secrets to GitHub: AZURE_CREDENTIALS, ACR_NAME, AZURE_WEBAPP_NAME, AZURE_RESOURCE_GROUP, VITE_API_URL, VITE_COGNITO_CLIENT_ID"

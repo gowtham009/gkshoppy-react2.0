@@ -1,0 +1,21 @@
+{
+  "project": "GKShoppy",
+  "region": "us-east-1",
+  "compute": {
+    "service": "AWS Lambda",
+    "api": "Amazon API Gateway HTTP API"
+  },
+  "database": {
+    "provider": "Amazon RDS for PostgreSQL",
+    "displayName": "GKShoppy",
+    "identifier": "GKShoppy",
+    "storage": "relational",
+    "chatTranscriptColumn": "JSONB"
+  },
+  "authentication": "Amazon Cognito User Pools",
+  "llm": {
+    "provider": "Amazon Bedrock",
+    "modelId": "amazon.nova-lite-v1:0",
+    "useCase": "GK Shoppy customer-support chat"
+  }
+}

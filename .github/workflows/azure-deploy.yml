@@ -32,9 +32,6 @@ jobs:
           context: .
           push: true
           tags: ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-          build-args: |
-            VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
-            VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Configure Azure Web App to use ACR image
         env:
@@ -42,7 +39,14 @@ jobs:
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
           AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
           AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_AWS_REGION: us-east-1
+          VITE_COGNITO_CLIENT_ID: ${{ secrets.VITE_COGNITO_CLIENT_ID }}
         run: |
+          az webapp config appsettings set \
+            --name $AZURE_WEBAPP_NAME \
+            --resource-group $AZURE_RESOURCE_GROUP \
+            --settings VITE_API_URL="$VITE_API_URL" VITE_AWS_REGION="$VITE_AWS_REGION" VITE_COGNITO_CLIENT_ID="$VITE_COGNITO_CLIENT_ID"
           az webapp config container set \
             --name $AZURE_WEBAPP_NAME \
             --resource-group $AZURE_RESOURCE_GROUP \

@@ -1,0 +1,249 @@
+GK SHOPPY - PROJECT INFORMATION
+===============================
+
+1. WHAT THIS PROJECT IS
+-----------------------
+GK Shoppy is a paper-craft ecommerce storefront. The frontend is a React and
+TypeScript single-page application. The AWS backend provides authentication,
+product, profile, cart, order, and customer-support chat APIs.
+
+The application code and AWS infrastructure definitions are in this repository.
+AWS resources have NOT been created by these code changes. A deployment requires
+your AWS CLI identity and will create billable resources.
+
+2. MAIN CUSTOMER FEATURES
+-------------------------
+- Browse the product catalog, search, filter by category and price, sort, and
+  view product details.
+- Add products to a customer-specific cart and update or remove cart items.
+- Create an order from the cart. The API calculates the order total, shipping,
+  and the supported CRAFT20 discount; the browser does not set the stored total.
+- Create an account, confirm the email address, sign in, reset a password, and
+  update profile and shipping information.
+- Chat with a Bedrock-powered product-support assistant.
+- Resume the latest saved chat after signing in again and delete that chat.
+
+The wishlist and the coupon-entry feedback are currently browser-side UI
+features. Checkout records an order; a payment processor is not integrated.
+
+3. SYSTEM OVERVIEW
+------------------
+
+  Browser (React + TypeScript)
+      |-- Cognito sign-up/sign-in and password-reset API
+      |-- HTTPS JSON API with Cognito ID-token authorization
+      v
+  API Gateway HTTP API
+      |
+      v
+  AWS Lambda (Node.js 22, TypeScript)
+      |-- RDS PostgreSQL (private)
+      |-- AWS Secrets Manager (database credentials)
+      |-- Amazon Bedrock Runtime (customer chat)
+      v
+  VPC with private isolated subnets and VPC endpoints
+
+The AWS deployment uses Lambda rather than an EKS or ECS application cluster.
+The database is an RDS PostgreSQL single instance, not an Aurora database
+cluster. This matches the selected serverless compute and RDS PostgreSQL
+options.
+
+4. TECHNOLOGIES AND IMPORTANT FILES
+-----------------------------------
+- React, TypeScript, Vite, Tailwind CSS, and lucide-react: browser application.
+- src/App.tsx: application page selection and shared providers.
+- src/contexts/AuthContext.tsx: current user, profile, and authentication state.
+- src/contexts/CartContext.tsx: shared cart state and API calls.
+- src/lib/auth.ts: Cognito browser operations and short-lived session storage.
+- src/lib/api.ts: authenticated JSON API request helper.
+- src/components/ChatWidget.tsx: customer-support chat interface.
+- infra/config/aws-config.json: non-secret AWS region/service/model settings.
+- infra/lib/gkshoppy-stack.ts: AWS CDK stack definition.
+- infra/lambda/handler.ts: API routes and database/Bedrock work.
+- infra/lambda/database.ts: private PostgreSQL connection and secret lookup.
+- infra/lambda/schema-resource.ts: creates the schema during CDK deployment.
+- infra/sql/schema.sql: PostgreSQL tables and indexes.
+- infra/scripts/migrate-supabase.ts: optional export/import from the old Supabase
+  project.
+- seed_products.sql: sample product data for the new PostgreSQL database.
+- README.md: concise setup, deployment, and migration commands.
+
+5. AUTHENTICATION AND REQUEST SECURITY
+--------------------------------------
+The browser signs up and signs in through the public Cognito app client. New
+accounts must confirm their email. Existing Supabase password hashes cannot be
+transferred; imported customers must use "Forgot password?" to set a new
+Cognito password.
+
+After sign-in, the browser sends its Cognito ID token in the Authorization
+header. API Gateway validates the token for protected routes. The Lambda gets
+the user ID from the token; it does not trust a user ID supplied by the browser.
+Cart, profile, order, and chat queries are scoped to that user ID.
+
+The RDS database is not publicly accessible. Its generated password is held in
+Secrets Manager, and the API Lambda reads it at runtime. Do not put database
+credentials, AWS access keys, Cognito admin credentials, or the Supabase
+service-role key in the frontend or a committed file.
+
+6. API ROUTES
+-------------
+All requests and responses use JSON. Except for GET /products, routes require a
+valid Cognito ID token.
+
+GET    /products              Public product list.
+GET    /profile               Load or initialize the signed-in user's profile.
+PUT    /profile               Update name, phone, shipping, or billing fields.
+GET    /cart                  Get or create the signed-in user's cart.
+DELETE /cart                  Empty the signed-in user's cart.
+POST   /cart/items            Add a product; body includes productId and quantity.
+PATCH  /cart/items/{id}       Change quantity; zero removes the item.
+DELETE /cart/items/{id}       Remove one cart item.
+GET    /orders                Return the signed-in user's order history.
+POST   /orders                Create an order from the server-side cart.
+GET    /chat                  Return the latest saved conversation, if any.
+POST   /chat                  Ask Bedrock and save the user/assistant messages.
+DELETE /chat/{id}             Delete that user's selected conversation.
+
+The chat stores only the transcript as JSONB. It does not separately extract
+customer preferences or structured customer details. There is no automatic
+retention period; a customer can delete the current saved conversation from the
+chat window. The assistant is instructed not to request passwords, one-time
+codes, or payment-card information.
+
+7. DATABASE AND JSON DATA
+-------------------------
+The RDS database name is exactly GKShoppy. Tables:
+
+- users: Cognito user ID and profile/contact fields.
+- products: catalog details, prices, stock, categories, and image links.
+- carts and cart_items: each user's cart and its products.
+- orders and order_items: order totals and a snapshot of purchased prices.
+- chat_conversations: one row per conversation with its messages in a JSONB
+  column.
+
+The relational ecommerce data stays in PostgreSQL tables. AWS settings are
+stored as non-secret JSON in infra/config/aws-config.json. CDK can write
+deployment outputs to aws-outputs.json; that generated file is ignored by Git
+and contains resource identifiers, not credentials.
+
+8. AWS RESOURCES AND COST NOTES
+-------------------------------
+The CDK stack in us-east-1 defines:
+- API Gateway HTTP API.
+- Node.js 22 Lambda for API and migration batches.
+- Cognito User Pool and public web app client.
+- Private RDS PostgreSQL instance named GKShoppy, encrypted storage, backups,
+  generated credentials, deletion protection, and retain-on-stack-removal.
+- A VPC with isolated subnets and private endpoints for Secrets Manager and
+  Bedrock Runtime.
+- A custom-resource Lambda that applies infra/sql/schema.sql after the database
+  is created.
+- Bedrock access for the configured Nova Lite model.
+
+RDS, VPC interface endpoints, API usage, and Bedrock model calls can incur
+charges. Review the synthesized stack and AWS pricing before deploying. The
+database deletion protection and retention settings intentionally protect data;
+removing the CDK stack does not automatically remove the retained database.
+
+9. LOCAL FRONTEND SETUP
+-----------------------
+From the repository root:
+
+  npm ci
+
+Create a local .env file with values from the deployed stack:
+
+  VITE_API_URL=https://your-api-id.execute-api.us-east-1.amazonaws.com
+  VITE_AWS_REGION=us-east-1
+  VITE_COGNITO_CLIENT_ID=your-cognito-app-client-id
+
+Then run:
+
+  npm run dev
+
+Useful frontend checks:
+
+  npm run typecheck
+  npm run lint
+  npm run build
+
+For Docker/Render/Azure deployments, pass the same three frontend values as
+runtime environment variables. These are public client configuration values,
+not AWS credentials. Docker writes them into the runtime environment config.
+
+10. DEPLOYING THE AWS STACK
+---------------------------
+Deployment is optional and billable. Configure AWS CLI access to the intended
+AWS account first. From the repository root, run:
+
+  Set-Location infra
+  npm install
+  npx cdk bootstrap
+  npm run synth
+  npm run deploy
+
+The deployment writes outputs to ../aws-outputs.json. The database schema is
+created automatically during stack deployment. Set the frontend environment
+variables using ApiUrl, UserPoolClientId, and us-east-1 from the outputs and
+configuration.
+
+Infrastructure checks:
+
+  npm run typecheck
+  npm run synth
+
+11. IMPORTING DATA FROM SUPABASE
+--------------------------------
+The migration script copies users, products, carts, cart items, orders, and
+order items. It creates Cognito users, maps their new Cognito IDs to the
+existing records, and assigns unknown random passwords. Customers must reset
+their passwords after import.
+
+Run the import from the infra directory after deployment. The local machine
+needs network access to Supabase and AWS CLI permissions to administer users
+in the new Cognito pool and invoke the API Lambda. The local machine does not
+need direct network access to the private RDS database.
+
+Set these variables in the local shell; never commit their values:
+
+  SUPABASE_URL
+  SUPABASE_SERVICE_ROLE_KEY
+  COGNITO_USER_POOL_ID
+  API_FUNCTION_NAME
+  AWS_REGION=us-east-1
+
+Then run:
+
+  npm run db:import-supabase
+
+Take a source backup before migration. Import before directing customers to the
+new app, and verify migrated records. The import is ordered and repeatable for
+the same source IDs, but it does not delete target records that are absent from
+the source.
+
+12. CURRENT LIMITATIONS
+-----------------------
+- This repository contains IaC and code only; no AWS stack, database, Cognito
+  pool, or Bedrock model access has been provisioned.
+- The AWS account must have Bedrock model access enabled for the selected model.
+- Product seeding is a manual SQL step using seed_products.sql.
+- There is no payment provider, admin catalog management API, or persisted
+  wishlist in this implementation.
+- The API currently allows cross-origin requests from any origin; protected
+  operations still require a valid Cognito token. Restrict CORS origins when
+  the production storefront domain is known.
+
+13. VALIDATION STATUS
+---------------------
+The current code checks pass:
+
+- npm run lint
+- npm run typecheck
+- npm run build
+- In infra: npm run typecheck and npm run synth
+- npm audit in both the repository root and infra: zero vulnerabilities
+
+The dependency advisory re-scan found no known CVEs among the previously
+affected frontend dependencies. Vite may print a [PLUGIN_TIMINGS] performance
+diagnostic during builds; this is informational output, not a build warning or
+error.

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { apiRequest } from '../lib/api';
 import { Order, OrderItem } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { Package } from 'lucide-react';
@@ -13,36 +13,27 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function OrdersPage() {
-  const { supabaseUser } = useAuth();
+  const { user } = useAuth();
   const [orders, setOrders] = useState<(Order & { items: OrderItem[] })[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
-    if (supabaseUser) fetchOrders();
-  }, [supabaseUser]);
+    if (user) void fetchOrders();
+  }, [user]);
 
   async function fetchOrders() {
     setLoading(true);
-    const { data: ordersData } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('user_id', supabaseUser!.id)
-      .order('order_date', { ascending: false });
-
-    if (!ordersData) { setLoading(false); return; }
-
-    const ordersWithItems = await Promise.all(
-      ordersData.map(async (order) => {
-        const { data: items } = await supabase
-          .from('order_items')
-          .select('*, product:products(*)')
-          .eq('order_id', order.id);
-        return { ...order, items: (items as OrderItem[]) || [] };
-      })
-    );
-
-    setOrders(ordersWithItems as (Order & { items: OrderItem[] })[]);
-    setLoading(false);
+    try {
+      const ordersData = await apiRequest<(Order & { items: OrderItem[] })[]>('/orders');
+      setOrders(ordersData);
+      setLoadError('');
+    } catch (error: unknown) {
+      console.error('Unable to load order history:', error);
+      setLoadError(error instanceof Error ? error.message : 'Unable to load order history.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (loading) {
@@ -51,6 +42,14 @@ export default function OrdersPage() {
         {[1, 2, 3].map((i) => (
           <div key={i} className="h-32 bg-gray-100 rounded-xl animate-pulse" />
         ))}
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div role="alert" className="max-w-2xl mx-auto px-4 py-16 text-center text-red-600">
+        {loadError}
       </div>
     );
   }

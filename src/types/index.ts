@@ -9,6 +9,12 @@ export interface User {
   phone_number: string | null;
 }
 
+export interface AuthenticatedUser {
+  id: string;
+  email: string;
+  username: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -51,4 +57,14 @@ export interface OrderItem {
   quantity: number;
   price_at_time_of_purchase: number;
   product?: Product;
+}
+
+export interface CartResponse {
+  id: string;
+  items: CartItem[];
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
 }

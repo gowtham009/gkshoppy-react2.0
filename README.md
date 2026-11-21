@@ -1,123 +1,62 @@
-git add README.md
-git commit -m "Resolve merge conflict in README.md"
-git push -u origin main<<<<<<< HEAD
-# gk-shoppy
+# GK Shoppy
 
-This repository contains the GK Shoppy Vite + React app with a Dockerfile and deployment helpers.
+GK Shoppy is a React storefront backed by AWS Lambda, API Gateway, RDS PostgreSQL, Cognito, and Bedrock.
 
-Quick setup
+## AWS architecture
 
-1. Ensure `.env` is listed in `.gitignore` (it is).
-2. Create a GitHub repository and push this project (commands below).
-3. Connect the repo to Render (recommended) or any container host and set the required secrets.
+- **API:** API Gateway HTTP API and a Node.js Lambda in private subnets.
+- **Database:** Private, encrypted PostgreSQL database **GKShoppy** on RDS.
+- **Authentication:** Cognito User Pool. The browser uses its public app-client ID; no AWS credentials are shipped to the frontend.
+- **LLM:** Amazon Bedrock Nova Lite customer-support chat. Authenticated chat messages and replies are stored as JSONB in PostgreSQL until deleted by the user. The assistant is instructed not to request passwords, one-time codes, or payment-card data.
+- **Network/security:** The database is not public. Lambda can access RDS, Secrets Manager, and Bedrock through VPC endpoints. RDS credentials are generated and kept in Secrets Manager.
 
-Push commands (replace placeholders):
+The CDK configuration is non-secret JSON in `infra/config/aws-config.json`. CDK deployment outputs can be written to `aws-outputs.json`; that generated file is ignored by Git and contains resource identifiers, not credentials.
 
-```bash
-git init
-git add .
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin https://github.com/<github-username>git add README.md
-git commit -m "Resolve merge conflict in README.md"
-git push -u origin main/https://github.com/gowtham009/gkshoppy-react2.0git checkout --ours README.md
-git add README.md
-git commit -m "Resolve conflict: keep local README.md"
-git push -u origin maingit checkout --theirs README.md
-git add README.md
-git commit -m "Resolve conflict: accept remote README.md"
-git push -u origin maingit show :1:README.md > README.ancestor.md  # optional ancestor
-git show :2:README.md > README.ours.md
-git show :3:README.md > README.theirs.md
-cat README.ours.md README.theirs.md > README.md
-git add README.md
-git commit -m "Resolve conflict: concatenate local+remote README"
-git push -u origin maingit show :1:README.md > README.ancestor.md  # optional ancestor
-git show :2:README.md > README.ours.md
-git show :3:README.md > README.theirs.md
-cat README.ours.md README.theirs.md > README.md
-# gk-shoppy / gkshoppy-react2.0
+## Local frontend
 
-This repository contains the GK Shoppy Vite + React app (v2.0) with Docker support and CI/CD deployment helpers for Render and Azure.
+1. Install frontend dependencies with `npm ci`.
+2. Set these values in a local `.env` file:
 
-## Quick setup
+   ```env
+   VITE_API_URL=https://your-api-id.execute-api.us-east-1.amazonaws.com
+   VITE_AWS_REGION=us-east-1
+   VITE_COGNITO_CLIENT_ID=your-cognito-app-client-id
+   ```
 
-1. Ensure `.env` is listed in `.gitignore` (it is).
-2. Create a GitHub repository and push this project (commands below) or push your local changes to the existing repo.
-3. Connect the repo to Render (optional) or use Azure automated deployment (ACR -> Web App).
+3. Run `npm run dev`, `npm run typecheck`, or `npm run build`.
 
-Push commands (replace placeholders):
+The same values can be supplied as container environment variables for `docker compose up --build`. Only the API URL, region, and Cognito public client ID belong in the browser. Never set the database password, Cognito admin credentials, AWS access keys, or Supabase service-role key in frontend variables.
 
-```bash
-git init
-git add .
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin https://github.com/<github-username>/<repo>.git
-git push -u origin main
+## AWS infrastructure
+
+The infrastructure is defined in `infra/`. **Deploying creates billable AWS resources**; no resources are created by the source changes themselves.
+
+1. Configure the AWS CLI with an appropriately scoped role and select `us-east-1`.
+2. From the repository root, run:
+
+   ```powershell
+   Set-Location infra
+   npm install
+   npx cdk bootstrap
+   npm run synth
+   npm run deploy
+   ```
+
+3. The deployment writes non-secret resource outputs to `aws-outputs.json` at the repository root. Set the three frontend values from `ApiUrl`, `UserPoolClientId`, and the configured region.
+4. The deployment applies `infra/sql/schema.sql` to the private database using a VPC-connected Lambda custom resource. To populate sample products, run `seed_products.sql` against GKShoppy with `psql` from a host that can reach the VPC.
+
+## Migrating from Supabase
+
+Supabase password hashes cannot be transferred to Cognito. The migration utility copies profiles, products, carts, and orders, creates Cognito users, and assigns each migrated user a new password that the customer does not know. Migrated customers must use **Forgot password?** in the app to set a new password.
+
+After deploying the stack, run `npm run db:import-supabase` from `infra/` with AWS CLI access and the following environment variables set in your local shell. The script exports from Supabase on the local machine and sends bounded batches to the private Lambda; your machine does not need direct database network access.
+
+```text
+SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY
+COGNITO_USER_POOL_ID
+API_FUNCTION_NAME
+AWS_REGION=us-east-1
 ```
 
-## Local development
-
-```bash
-npm install
-npm run dev
-```
-
-Create a local `.env` file with:
-
-```env
-VITE_SUPABASE_URL=your-supabase-url
-VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
-```
-
-## Containerized run
-
-Build and run with Docker Compose:
-
-```bash
-docker compose up --build
-```
-
-The container serves the app on port `8080`. Supabase values are injected at container startup through environment variables.
-
-## Render deployment (recommended)
-
-- On Render, create a new Web Service and select your repo.
-- Environment: Docker (Render will use the `Dockerfile`).
-- Add these Env Vars (as secrets) in Render:
-  - `VITE_SUPABASE_URL` — your Supabase URL
-  - `VITE_SUPABASE_ANON_KEY` — your Supabase anon key
- - Optionally add `render.yaml` to the repo to configure the service automatically.
-
-## Azure automated deployment (ACR -> Web App)
-
-- This repo includes a GitHub Actions workflow at `.github/workflows/azure-deploy.yml` that builds the Docker image, pushes it to Azure Container Registry (ACR), and updates an Azure Web App to use that image.
-- Required Azure setup (one-time):
-  1. Create an Azure Container Registry (ACR) and an Azure Web App (Web App for Containers) in the same subscription.
-  2. Create a service principal and add its JSON to the GitHub secret `AZURE_CREDENTIALS`.
-     - Create SP and output JSON:
-
-```bash
-az ad sp create-for-rbac --name "github-action-sp-<your-name>" --sdk-auth
-```
-
-  3. In the repository's GitHub Secrets, add:
-     - `AZURE_CREDENTIALS` — the JSON from the previous command
-     - `ACR_NAME` — your ACR name (short name, used as `${ACR_NAME}.azurecr.io`)
-     - `ACR_USERNAME` and `ACR_PASSWORD` — registry credentials (or use service principal with access)
-     - `AZURE_WEBAPP_NAME` — the App Service name
-     - `AZURE_RESOURCE_GROUP` — the resource group containing the Web App
-     - `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` — your Supabase values
-
-When those secrets are present, pushing to `main` triggers the workflow and updates your Azure Web App with the new image.
-
-## CI: GitHub Actions
-
-- On push to `main`, `.github/workflows/publish-image.yml` will build and push the image to `ghcr.io/<owner>/gkshoppy:latest`.
-- The repo also includes an Azure deploy workflow at `.github/workflows/azure-deploy.yml` to push to ACR and update Web App.
-
-## Notes
-
-- Do not commit secrets or `azure_sp_*.json` files. Add them to GitHub Secrets instead.
-- For quick testing, the repo supports a temporary local tunnel; for production use Render or Azure as described above.
+The deployment outputs `UserPoolId` and `ApiFunctionName` in `aws-outputs.json`. The AWS identity running the script needs permission to invoke that Lambda and administer users in the new Cognito pool. The migration script reads the Supabase service-role key from the process environment only; do not put it in a committed file. Take a database backup and verify the imported records before directing production traffic to the new API.

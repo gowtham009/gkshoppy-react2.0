@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { X, ShoppingCart, Package, Star, Minus, Plus, Heart } from 'lucide-react';
 import { Product } from '../types';
-import { useCart } from '../contexts/CartContext';
+import { useCart } from '../contexts/useCart';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ProductModalProps {
@@ -15,17 +15,22 @@ interface ProductModalProps {
 
 export default function ProductModal({ product, onClose, onAuthRequired, onAddedToCart, wishlist, onToggleWishlist }: ProductModalProps) {
   const { addToCart } = useCart();
-  const { supabaseUser } = useAuth();
+  const { user } = useAuth();
   const [qty, setQty] = useState(1);
   const [adding, setAdding] = useState(false);
 
   async function handleAdd() {
-    if (!supabaseUser) { onAuthRequired(); return; }
+    if (!user) { onAuthRequired(); return; }
     setAdding(true);
-    await addToCart(product, qty);
-    setAdding(false);
-    onAddedToCart();
-    onClose();
+    try {
+      await addToCart(product, qty);
+      onAddedToCart();
+      onClose();
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : 'Unable to add this item to your cart.');
+    } finally {
+      setAdding(false);
+    }
   }
 
   return (

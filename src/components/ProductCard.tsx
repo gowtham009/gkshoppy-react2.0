@@ -1,6 +1,6 @@
 import { ShoppingCart, Package, Heart, Eye, Star } from 'lucide-react';
 import { Product } from '../types';
-import { useCart } from '../contexts/CartContext';
+import { useCart } from '../contexts/useCart';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ProductCardProps {
@@ -14,13 +14,17 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, onAuthRequired, onAddedToCart, onViewDetail, wishlist, onToggleWishlist }: ProductCardProps) {
   const { addToCart } = useCart();
-  const { supabaseUser } = useAuth();
+  const { user } = useAuth();
 
   async function handleAddToCart(e: React.MouseEvent) {
     e.stopPropagation();
-    if (!supabaseUser) { onAuthRequired(); return; }
-    await addToCart(product);
-    onAddedToCart();
+    if (!user) { onAuthRequired(); return; }
+    try {
+      await addToCart(product);
+      onAddedToCart();
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : 'Unable to add this item to your cart.');
+    }
   }
 
   return (

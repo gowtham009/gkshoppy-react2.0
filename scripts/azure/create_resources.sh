@@ -59,6 +59,6 @@ echo "  AZURE_CREDENTIALS = (the JSON output above)"
 echo "  ACR_NAME = $ACR"
 echo "  AZURE_WEBAPP_NAME = $WEBAPP"
 echo "  AZURE_RESOURCE_GROUP = $RG"
-echo "  VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY = your Supabase values"
+echo "  VITE_API_URL and VITE_COGNITO_CLIENT_ID = values from the GKShoppy AWS CDK outputs"
 
 echo "\nDone. After you add the secrets, push to 'main' to trigger the workflow."

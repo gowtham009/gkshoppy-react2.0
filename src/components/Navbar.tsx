@@ -1,6 +1,6 @@
 import { ShoppingCart, User, LogOut, Package } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useCart } from '../contexts/CartContext';
+import { useCart } from '../contexts/useCart';
 
 interface NavbarProps {
   onNavigate: (page: string) => void;

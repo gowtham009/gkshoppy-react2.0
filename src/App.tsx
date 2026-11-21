@@ -7,6 +7,7 @@ import AuthPage from './pages/AuthPage';
 import CartPage from './pages/CartPage';
 import OrdersPage from './pages/OrdersPage';
 import ProfilePage from './pages/ProfilePage';
+import ChatWidget from './components/ChatWidget';
 
 function AppContent() {
   const [page, setPage] = useState('home');
@@ -35,6 +36,7 @@ function AppContent() {
         {page === 'orders' && <OrdersPage />}
         {page === 'profile' && <ProfilePage />}
       </main>
+      <ChatWidget onSignIn={() => navigate('auth')} />
     </div>
   );
 }
