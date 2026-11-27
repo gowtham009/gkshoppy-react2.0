@@ -6,7 +6,8 @@ CREATE TABLE products (
   description TEXT,
   stock_quantity INT,
   image_url VARCHAR(1000),
-  category VARCHAR(255)
+  category VARCHAR(255),
+  version INTEGER NOT NULL DEFAULT 0
 );
 
 INSERT INTO products (name, price, description, stock_quantity, image_url, category) VALUES

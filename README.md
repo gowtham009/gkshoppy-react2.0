@@ -65,7 +65,7 @@ The deployment outputs `UserPoolId` and `ApiFunctionName` in `aws-outputs.json`.
 
 The `backend/` directory contains a separate Spring Boot/Thymeleaf application with its own H2 development database, authentication, cart/order flows, and payment/search scaffolding. It is not the API used by the React storefront; the React app continues to call the AWS API configured by `VITE_API_URL`.
 
-Run the backend locally with Java 17 and Maven:
+Run the backend locally with Java 25 and Maven 3.9.16 or later:
 
 ```bash
 cd backend
