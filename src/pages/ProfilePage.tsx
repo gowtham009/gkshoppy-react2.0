@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { apiRequest } from '../lib/api';
 import { Save } from 'lucide-react';
+import { isLocalAuthMode } from '../lib/auth';
 
 export default function ProfilePage() {
   const { profile, refreshProfile } = useAuth();
@@ -17,6 +18,19 @@ export default function ProfilePage() {
     if (!profile) return;
     setSaving(true);
     try {
+      if (isLocalAuthMode()) {
+        const updated = {
+          ...profile,
+          full_name: fullName,
+          phone_number: phone,
+          shipping_address: shipping,
+          billing_address: billing,
+        };
+        localStorage.setItem(`gkshoppy.demo.profile.${profile.id}`, JSON.stringify(updated));
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2500);
+        return;
+      }
       await apiRequest('/profile', {
         method: 'PUT',
         body: JSON.stringify({

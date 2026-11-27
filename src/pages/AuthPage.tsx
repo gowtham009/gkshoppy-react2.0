@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Store } from 'lucide-react';
-import { confirmPasswordReset, startPasswordReset } from '../lib/auth';
+import { confirmPasswordReset, isLocalAuthMode, startPasswordReset } from '../lib/auth';
 
 interface AuthPageProps {
   onSuccess: () => void;
@@ -35,7 +35,11 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
       } else if (mode === 'signup') {
         await signUp(email, password, username);
         setMode('confirm-signup');
-        setNotice('Enter the confirmation code sent to your email.');
+        setNotice(
+          isLocalAuthMode()
+            ? 'Demo mode: no email was sent. Enter confirmation code 123456.'
+            : 'Enter the confirmation code sent to your email.',
+        );
       } else if (mode === 'confirm-signup') {
         await confirmSignUp(email, code);
         await signIn(email, password);
@@ -43,7 +47,11 @@ export default function AuthPage({ onSuccess }: AuthPageProps) {
       } else if (mode === 'forgot-password') {
         await startPasswordReset(email);
         setMode('confirm-reset');
-        setNotice('Enter the password reset code sent to your email.');
+        setNotice(
+          isLocalAuthMode()
+            ? 'Demo mode: no email was sent. Enter reset code 123456.'
+            : 'Enter the password reset code sent to your email.',
+        );
       } else {
         await confirmPasswordReset(email, code, password);
         setMode('signin');

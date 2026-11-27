@@ -15,6 +15,53 @@ interface CognitoResponse {
 }
 
 const SESSION_KEY = 'gkshoppy.auth.session';
+const DEMO_ACCOUNTS_KEY = 'gkshoppy.demo.accounts';
+const DEMO_SESSION_KEY = 'gkshoppy.demo.session';
+
+interface DemoAccount {
+  email: string;
+  password: string;
+  username: string;
+  confirmed: boolean;
+}
+
+export function isLocalAuthMode() {
+  const runtime = window.__env ?? {};
+  const region = runtime.VITE_AWS_REGION ?? import.meta.env.VITE_AWS_REGION;
+  const clientId = runtime.VITE_COGNITO_CLIENT_ID ?? import.meta.env.VITE_COGNITO_CLIENT_ID;
+  return !region || !clientId;
+}
+
+function demoAccounts(): DemoAccount[] {
+  try {
+    return JSON.parse(localStorage.getItem(DEMO_ACCOUNTS_KEY) || '[]') as DemoAccount[];
+  } catch {
+    return [];
+  }
+}
+
+function saveDemoAccounts(accounts: DemoAccount[]) {
+  localStorage.setItem(DEMO_ACCOUNTS_KEY, JSON.stringify(accounts));
+}
+
+function makeDemoSession(account: DemoAccount): AuthSession {
+  const claims = {
+    sub: `demo-${btoa(account.email).replace(/[^a-zA-Z0-9]/g, '').slice(0, 24)}`,
+    email: account.email,
+    preferred_username: account.username,
+  };
+  const encodedClaims = btoa(JSON.stringify(claims)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  const idToken = `eyJhbGciOiJub25lIn0.${encodedClaims}.demo`;
+  const session: AuthSession = {
+    idToken,
+    accessToken: 'demo-access-token',
+    refreshToken: 'demo-refresh-token',
+    expiresAt: Math.floor(Date.now() / 1000) + 60 * 60 * 24,
+  };
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  sessionStorage.setItem(DEMO_SESSION_KEY, account.email);
+  return session;
+}
 
 function config() {
   const runtime = window.__env ?? {};
@@ -61,6 +108,17 @@ function saveSession(result: CognitoResponse['AuthenticationResult'], previous?:
 }
 
 export async function signUp(email: string, password: string, username: string) {
+  if (isLocalAuthMode()) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (password.length < 8) throw new Error('Password must be at least 8 characters.');
+    const accounts = demoAccounts();
+    if (accounts.some(account => account.email === normalizedEmail)) {
+      throw new Error('An account with this email already exists.');
+    }
+    accounts.push({ email: normalizedEmail, password, username: username.trim(), confirmed: false });
+    saveDemoAccounts(accounts);
+    return;
+  }
   const { clientId } = config();
   await cognitoRequest('SignUp', {
     ClientId: clientId,
@@ -74,6 +132,16 @@ export async function signUp(email: string, password: string, username: string) 
 }
 
 export async function confirmSignUp(email: string, code: string) {
+  if (isLocalAuthMode()) {
+    if (code.trim() !== '123456') throw new Error('Use the demo confirmation code 123456.');
+    const normalizedEmail = email.trim().toLowerCase();
+    const accounts = demoAccounts();
+    const account = accounts.find(item => item.email === normalizedEmail);
+    if (!account) throw new Error('No account was found for this email.');
+    account.confirmed = true;
+    saveDemoAccounts(accounts);
+    return;
+  }
   const { clientId } = config();
   await cognitoRequest('ConfirmSignUp', {
     ClientId: clientId,
@@ -83,6 +151,14 @@ export async function confirmSignUp(email: string, code: string) {
 }
 
 export async function signIn(email: string, password: string) {
+  if (isLocalAuthMode()) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const account = demoAccounts().find(item => item.email === normalizedEmail);
+    if (!account) throw new Error('No account found with this email.');
+    if (!account.confirmed) throw new Error('Confirm your email before signing in.');
+    if (account.password !== password) throw new Error('Incorrect email or password.');
+    return makeDemoSession(account);
+  }
   const { clientId } = config();
   const result = await cognitoRequest<CognitoResponse>('InitiateAuth', {
     AuthFlow: 'USER_PASSWORD_AUTH',
@@ -96,6 +172,11 @@ export async function signIn(email: string, password: string) {
 }
 
 export async function startPasswordReset(email: string) {
+  if (isLocalAuthMode()) {
+    const account = demoAccounts().find(item => item.email === email.trim().toLowerCase());
+    if (!account) throw new Error('No account found with this email.');
+    return;
+  }
   const { clientId } = config();
   await cognitoRequest('ForgotPassword', {
     ClientId: clientId,
@@ -104,6 +185,16 @@ export async function startPasswordReset(email: string) {
 }
 
 export async function confirmPasswordReset(email: string, code: string, password: string) {
+  if (isLocalAuthMode()) {
+    if (code.trim() !== '123456') throw new Error('Use the demo reset code 123456.');
+    if (password.length < 8) throw new Error('Password must be at least 8 characters.');
+    const accounts = demoAccounts();
+    const account = accounts.find(item => item.email === email.trim().toLowerCase());
+    if (!account) throw new Error('No account found with this email.');
+    account.password = password;
+    saveDemoAccounts(accounts);
+    return;
+  }
   const { clientId } = config();
   await cognitoRequest('ConfirmForgotPassword', {
     ClientId: clientId,
@@ -115,6 +206,7 @@ export async function confirmPasswordReset(email: string, code: string, password
 
 export function clearSession() {
   sessionStorage.removeItem(SESSION_KEY);
+  sessionStorage.removeItem(DEMO_SESSION_KEY);
 }
 
 export async function getCurrentSession(): Promise<AuthSession | null> {
@@ -134,6 +226,11 @@ export async function getCurrentSession(): Promise<AuthSession | null> {
     !session.refreshToken ||
     !Number.isFinite(session.expiresAt)
   ) {
+    clearSession();
+    return null;
+  }
+  if (isLocalAuthMode()) {
+    if (session.expiresAt > Math.floor(Date.now() / 1000)) return session;
     clearSession();
     return null;
   }

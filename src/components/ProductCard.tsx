@@ -1,7 +1,8 @@
-import { ShoppingCart, Package, Heart, Eye, Star } from 'lucide-react';
+import { ShoppingCart, Heart, Eye, Star } from 'lucide-react';
 import { Product } from '../types';
 import { useCart } from '../contexts/useCart';
 import { useAuth } from '../contexts/AuthContext';
+import { getGeneratedProductImage } from '../lib/productImages';
 
 interface ProductCardProps {
   product: Product;
@@ -31,10 +32,15 @@ export default function ProductCard({ product, onAuthRequired, onAddedToCart, on
     <div onClick={() => onViewDetail(product)}
       className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group">
       <div className="relative aspect-square bg-gray-50 overflow-hidden">
-        {product.image_url
-          ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-          : <div className="w-full h-full flex items-center justify-center"><Package size={48} className="text-gray-200" /></div>
-        }
+        <img
+          src={product.image_url || getGeneratedProductImage(product.name, product.category)}
+          alt={product.name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={event => {
+            event.currentTarget.onerror = null;
+            event.currentTarget.src = getGeneratedProductImage(product.name, product.category);
+          }}
+        />
         {/* Wishlist */}
         <button onClick={(e) => { e.stopPropagation(); onToggleWishlist(product.id); }}
           className={`absolute top-2 right-2 p-1.5 rounded-full shadow-sm transition-colors

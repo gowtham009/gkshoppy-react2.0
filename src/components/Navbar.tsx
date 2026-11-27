@@ -20,13 +20,12 @@ export default function Navbar({ onNavigate, currentPage }: NavbarProps) {
   );
 
   return (
-    <nav className="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
+    <nav className="bg-white/95 backdrop-blur-md sticky top-0 z-50 border-b border-stone-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <button onClick={() => onNavigate('home')} className="flex items-center gap-2 font-bold text-xl">
-            <span className="text-2xl">🎨</span>
-            <span className="text-indigo-600">GK</span>
-            <span className="text-gray-800">Shoppy</span>
+          <button onClick={() => onNavigate('home')} className="flex items-center gap-2.5 font-bold text-xl">
+            <span className="w-9 h-9 rounded-full bg-rose-500 text-white flex items-center justify-center text-sm font-black shadow-sm">GK</span>
+            <span className="text-stone-900 tracking-tight">Shoppy</span>
           </button>
 
           <div className="hidden sm:flex items-center gap-5">

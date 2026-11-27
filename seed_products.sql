@@ -4,14 +4,14 @@
 INSERT INTO products (name, price, description, stock_quantity, image_url, category) VALUES
 
 -- Origami
-('Rainbow Origami Paper Set (200 sheets)', 299.00, 'Vibrant multi-colour origami paper in 20 colours. 15x15cm, perfect for beginners and advanced folders. Acid-free and fade-resistant.', 150, 'https://images.unsplash.com/photo-1612521564730-62fc7691cd85?w=400', 'Origami'),
-('Metallic Origami Paper (100 sheets)', 399.00, 'Shimmering gold, silver and holographic sheets for stunning origami creations. 15x15cm. Ideal for festive décor.', 80, 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400', 'Origami'),
-('Giant Origami Paper A3 (50 sheets)', 349.00, 'Large-format 29x29cm origami paper in assorted pastel and bold colours. Great for oversized decorations and wall art.', 60, 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400', 'Origami'),
-('Origami Crane Kit with Instructions', 249.00, 'Everything you need to fold 100 paper cranes. Includes 100 patterned sheets and a step-by-step illustrated guide.', 120, 'https://images.unsplash.com/photo-1612521564730-62fc7691cd85?w=400', 'Origami'),
-('Washi Origami Paper (60 sheets)', 449.00, 'Authentic Japanese washi-textured origami paper. Lightweight yet strong with traditional prints — florals, waves, and geometric patterns.', 75, 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400', 'Origami'),
+('Rainbow Origami Paper Set (200 sheets)', 299.00, 'Vibrant multi-colour origami paper in 20 colours. 15x15cm, perfect for beginners and advanced folders. Acid-free and fade-resistant.', 150, '/product-images/origami.jpg', 'Origami'),
+('Metallic Origami Paper (100 sheets)', 399.00, 'Shimmering gold, silver and holographic sheets for stunning origami creations. 15x15cm. Ideal for festive décor.', 80, '/product-images/origami.jpg', 'Origami'),
+('Giant Origami Paper A3 (50 sheets)', 349.00, 'Large-format 29x29cm origami paper in assorted pastel and bold colours. Great for oversized decorations and wall art.', 60, '/product-images/origami.jpg', 'Origami'),
+('Origami Crane Kit with Instructions', 249.00, 'Everything you need to fold 100 paper cranes. Includes 100 patterned sheets and a step-by-step illustrated guide.', 120, '/product-images/origami.jpg', 'Origami'),
+('Washi Origami Paper (60 sheets)', 449.00, 'Authentic Japanese washi-textured origami paper. Lightweight yet strong with traditional prints — florals, waves, and geometric patterns.', 75, '/product-images/origami.jpg', 'Origami'),
 
 -- Scrapbooking
-('Premium Scrapbook Starter Kit', 599.00, 'Complete kit with 12x12 album, 50 patterned papers, 200+ stickers, 20 die-cut shapes, washi tape rolls, and adhesive. Everything to start your first scrapbook.', 50, 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400', 'Scrapbooking'),
+('Premium Scrapbook Starter Kit', 599.00, 'Complete kit with 12x12 album, 50 patterned papers, 200+ stickers, 20 die-cut shapes, washi tape rolls, and adhesive. Everything to start your first scrapbook.', 50, '/product-images/scrapbooking.jpg', 'Scrapbooking'),
 ('12×12 Patterned Scrapbook Paper Pack (60 sheets)', 399.00, 'Double-sided designer papers in a coordinated floral & botanical theme. 160 gsm, acid-free, lignin-free.', 90, 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400', 'Scrapbooking'),
 ('Mini Album Scrapbook Kit', 349.00, 'Pre-cut mini album base with 10 pages, decorative papers, sticker sheets and ribbon. Makes an adorable 4x4 memory album.', 65, 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400', 'Scrapbooking'),
 ('Scrapbook Sticker Mega Pack (500+ stickers)', 299.00, 'Huge variety pack — floral, vintage, travel, seasonal, alphabets, numbers, and quote stickers. Great for journaling too.', 200, 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=400', 'Scrapbooking'),

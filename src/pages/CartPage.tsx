@@ -3,6 +3,8 @@ import { Minus, Plus, Trash2, ShoppingBag, Tag, ArrowRight } from 'lucide-react'
 import { useCart } from '../contexts/useCart';
 import { useAuth } from '../contexts/AuthContext';
 import { apiRequest } from '../lib/api';
+import { isLocalAuthMode } from '../lib/auth';
+import { getGeneratedProductImage } from '../lib/productImages';
 
 interface CartPageProps { onNavigate: (page: string) => void; }
 
@@ -45,6 +47,29 @@ export default function CartPage({ onNavigate }: CartPageProps) {
     if (!user || items.length === 0) return;
     setPlacing(true);
     try {
+      if (isLocalAuthMode()) {
+        const order = {
+          id: `demo-order-${Date.now()}`,
+          user_id: user.id,
+          order_date: new Date().toISOString(),
+          total_amount: finalTotal,
+          status: 'confirmed' as const,
+          items: items.map(item => ({
+            id: `demo-order-item-${item.id}`,
+            order_id: '',
+            product_id: item.product_id,
+            quantity: item.quantity,
+            price_at_time_of_purchase: item.product?.price ?? 0,
+            product: item.product,
+          })),
+        };
+        const key = `gkshoppy.demo.orders.${user.id}`;
+        const existing = JSON.parse(localStorage.getItem(key) || '[]') as typeof order[];
+        localStorage.setItem(key, JSON.stringify([order, ...existing]));
+        await clearCart();
+        onNavigate('orders');
+        return;
+      }
       await apiRequest('/orders', {
         method: 'POST',
         body: JSON.stringify({ couponCode: discount > 0 ? coupon.trim() : null }),
@@ -81,10 +106,11 @@ export default function CartPage({ onNavigate }: CartPageProps) {
           {items.map(item => (
             <div key={item.id} className="bg-white rounded-xl border border-gray-100 p-4 flex gap-4 items-center">
               <div className="w-16 h-16 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0">
-                {item.product?.image_url
-                  ? <img src={item.product.image_url} alt={item.product.name} className="w-full h-full object-cover" />
-                  : <div className="w-full h-full flex items-center justify-center text-gray-200 text-xl">📦</div>
-                }
+                <img
+                  src={item.product?.image_url || getGeneratedProductImage(item.product?.name || 'GK Shoppy product', item.product?.category)}
+                  alt={item.product?.name}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-indigo-500 font-semibold">{item.product?.category}</p>

@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { apiRequest } from '../lib/api';
 import { Order, OrderItem } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { Package } from 'lucide-react';
+import { isLocalAuthMode } from '../lib/auth';
 
 const STATUS_COLORS: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700',
@@ -18,13 +19,16 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
-  useEffect(() => {
-    if (user) void fetchOrders();
-  }, [user]);
-
-  async function fetchOrders() {
+  const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
+      if (isLocalAuthMode() && user) {
+        const key = `gkshoppy.demo.orders.${user.id}`;
+        const localOrders = JSON.parse(localStorage.getItem(key) || '[]') as (Order & { items: OrderItem[] })[];
+        setOrders(localOrders);
+        setLoadError('');
+        return;
+      }
       const ordersData = await apiRequest<(Order & { items: OrderItem[] })[]>('/orders');
       setOrders(ordersData);
       setLoadError('');
@@ -34,7 +38,11 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) void fetchOrders();
+  }, [user, fetchOrders]);
 
   if (loading) {
     return (

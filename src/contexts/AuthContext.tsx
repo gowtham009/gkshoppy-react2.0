@@ -31,6 +31,32 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+function getDemoProfile(email: string): User | null {
+  try {
+    const accounts = JSON.parse(localStorage.getItem('gkshoppy.demo.accounts') || '[]') as Array<{
+      email: string;
+      username: string;
+    }>;
+    const account = accounts.find(item => item.email === email);
+    if (!account) return null;
+    const id = `demo-${email}`;
+    const saved = localStorage.getItem(`gkshoppy.demo.profile.${id}`);
+    if (saved) return JSON.parse(saved) as User;
+    return {
+      id: `demo-${email}`,
+      username: account.username,
+      full_name: account.username,
+      email: account.email,
+      created_at: new Date().toISOString(),
+      shipping_address: null,
+      billing_address: null,
+      phone_number: null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
@@ -69,8 +95,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function fetchProfile() {
-    const result = await apiRequest<User>('/profile');
-    setProfile(result);
+    try {
+      const result = await apiRequest<User>('/profile');
+      setProfile(result);
+    } catch (error: unknown) {
+      if (typeof window !== 'undefined' && !(window.__env?.VITE_API_URL ?? import.meta.env.VITE_API_URL)) {
+        const demoEmail = sessionStorage.getItem('gkshoppy.demo.session');
+        const claims = demoEmail ? getDemoProfile(demoEmail) : null;
+        if (claims) setProfile(claims);
+        return;
+      }
+      throw error;
+    }
   }
 
   async function signUp(email: string, password: string, username: string) {

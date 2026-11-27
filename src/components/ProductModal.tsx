@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { X, ShoppingCart, Package, Star, Minus, Plus, Heart } from 'lucide-react';
+import { X, ShoppingCart, Star, Minus, Plus, Heart } from 'lucide-react';
 import { Product } from '../types';
 import { useCart } from '../contexts/useCart';
 import { useAuth } from '../contexts/AuthContext';
+import { getGeneratedProductImage } from '../lib/productImages';
 
 interface ProductModalProps {
   product: Product;
@@ -44,10 +45,15 @@ export default function ProductModal({ product, onClose, onAuthRequired, onAdded
         </button>
 
         <div className="aspect-video bg-gray-50 overflow-hidden rounded-t-2xl">
-          {product.image_url
-            ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
-            : <div className="w-full h-full flex items-center justify-center"><Package size={64} className="text-gray-200" /></div>
-          }
+          <img
+            src={product.image_url || getGeneratedProductImage(product.name, product.category)}
+            alt={product.name}
+            className="w-full h-full object-cover"
+            onError={event => {
+              event.currentTarget.onerror = null;
+              event.currentTarget.src = getGeneratedProductImage(product.name, product.category);
+            }}
+          />
         </div>
 
         <div className="p-6">

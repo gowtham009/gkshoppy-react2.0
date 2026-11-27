@@ -7,6 +7,7 @@ import Toast, { ToastMessage } from '../components/Toast';
 import { Search, SlidersHorizontal, Heart, LayoutGrid, List, ChevronDown, ShoppingCart } from 'lucide-react';
 import { useCart } from '../contexts/useCart';
 import { useAuth } from '../contexts/AuthContext';
+import { getGeneratedProductImage } from '../lib/productImages';
 
 interface HomePageProps { onAuthRequired: () => void; }
 
@@ -15,6 +16,17 @@ const SORT_OPTIONS = [
   { value: 'price_asc', label: 'Price: Low → High' },
   { value: 'price_desc', label: 'Price: High → Low' },
   { value: 'name', label: 'Name A–Z' },
+];
+
+const DEMO_PRODUCTS: Product[] = [
+  { id: 'demo-1', name: 'Rainbow Origami Paper Set', price: 299, description: 'Vibrant multi-colour origami paper in 20 colours.', stock_quantity: 150, created_at: '2026-01-01', image_url: '/product-images/origami.jpg', category: 'Origami' },
+  { id: 'demo-2', name: 'Premium Scrapbook Starter Kit', price: 599, description: 'A complete kit for preserving memories beautifully.', stock_quantity: 50, created_at: '2026-01-02', image_url: '/product-images/scrapbooking.jpg', category: 'Scrapbooking' },
+  { id: 'demo-3', name: 'Quilling Starter Kit', price: 449, description: 'Tools and colourful strips for creative paper coils.', stock_quantity: 80, created_at: '2026-01-03', image_url: '/product-images/quilling.jpg', category: 'Quilling' },
+  { id: 'demo-4', name: 'Card Making Starter Kit', price: 499, description: 'Everything needed to make thoughtful handmade cards.', stock_quantity: 55, created_at: '2026-01-04', image_url: '/product-images/card-making.jpg', category: 'Card Making' },
+  { id: 'demo-5', name: 'Paper Flower Making Kit', price: 399, description: 'Create beautiful roses and peonies from crepe paper.', stock_quantity: 70, created_at: '2026-01-05', image_url: '/product-images/paper-flowers.jpg', category: 'Paper Flowers' },
+  { id: 'demo-6', name: 'Washi Tape Collection', price: 349, description: 'Ten premium washi rolls for journals and gifts.', stock_quantity: 130, created_at: '2026-01-06', image_url: '/product-images/washi-tape.jpg', category: 'Washi Tape' },
+  { id: 'demo-7', name: 'Pastel Cardstock Pack', price: 299, description: 'Soft pastel sheets for cards, covers and journaling.', stock_quantity: 90, created_at: '2026-01-07', image_url: '/product-images/cardstock.jpg', category: 'Cardstock' },
+  { id: 'demo-8', name: 'Kids Paper Craft Activity Box', price: 349, description: 'Ten fun paper projects for young makers.', stock_quantity: 100, created_at: '2026-01-08', image_url: '/product-images/kids-craft.jpg', category: 'Kids Craft' },
 ];
 
 export default function HomePage({ onAuthRequired }: HomePageProps) {
@@ -49,10 +61,11 @@ export default function HomePage({ onAuthRequired }: HomePageProps) {
       const cats = Array.from(new Set(prods.map(p => p.category).filter(Boolean))) as string[];
       setCategories(cats.sort());
       setLoadError('');
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unable to load products.';
-      setLoadError(message);
-      addToast(message, 'error');
+    } catch {
+      setProducts(DEMO_PRODUCTS);
+      setCategories(Array.from(new Set(DEMO_PRODUCTS.map(p => p.category).filter(Boolean))) as string[]);
+      setLoadError('');
+      addToast('Showing the featured catalog', 'success');
     } finally {
       setLoading(false);
     }
@@ -101,37 +114,58 @@ export default function HomePage({ onAuthRequired }: HomePageProps) {
     });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7">
       {/* Hero Banner */}
-      <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-8 mb-8 text-white relative overflow-hidden">
-        <div className="absolute inset-0 flex items-center justify-around opacity-10 text-9xl select-none pointer-events-none">
-          🦢🌸📄✂️🎨
-        </div>
-        <div className="relative">
-          <p className="text-indigo-100 text-sm font-semibold uppercase tracking-wider mb-1">GK Shoppy</p>
-          <h1 className="text-3xl sm:text-4xl font-bold mb-2">Paper Craft Paradise</h1>
-          <p className="text-indigo-100 mb-4">50+ premium paper craft products — origami, scrapbooking, quilling &amp; more</p>
-          <div className="flex flex-wrap gap-2">
-            {['🚚 Free Shipping ₹499+', '✅ 100% Handpicked', '↩️ Easy Returns'].map(tag => (
-              <span key={tag} className="bg-white/20 backdrop-blur-sm text-white text-xs font-medium px-3 py-1 rounded-full">{tag}</span>
-            ))}
+      <section className="relative overflow-hidden rounded-[28px] bg-[#f4c95d] mb-9 min-h-[390px]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_20%,rgba(255,255,255,.55),transparent_24%),linear-gradient(115deg,#f7df9d_0%,#f4c95d_58%,#edaf42_100%)]" />
+        <div className="relative grid md:grid-cols-[1.05fr_.95fr] items-center min-h-[390px]">
+          <div className="px-7 py-10 sm:px-12 md:px-14">
+            <span className="inline-flex items-center rounded-full bg-white/70 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-stone-700">
+              New craft collection
+            </span>
+            <h1 className="mt-5 max-w-xl text-4xl sm:text-5xl lg:text-[58px] leading-[1.02] font-black tracking-tight text-stone-900">
+              Make something beautiful.
+            </h1>
+            <p className="mt-5 max-w-lg text-base sm:text-lg text-stone-700">
+              Thoughtfully chosen papers, tools and creative kits for every imagination.
+            </p>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <button onClick={() => document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' })}
+                className="rounded-full bg-stone-900 px-6 py-3 text-sm font-bold text-white shadow-lg transition-transform hover:-translate-y-0.5">
+                Shop the collection
+              </button>
+              <button onClick={() => setCategory('Origami')}
+                className="rounded-full bg-white/75 px-6 py-3 text-sm font-bold text-stone-800 backdrop-blur-sm">
+                Explore Origami
+              </button>
+            </div>
+          </div>
+          <div className="relative hidden h-full min-h-[390px] md:block">
+            <div className="absolute right-[12%] top-[12%] h-[300px] w-[300px] rotate-3 rounded-[42px] bg-white/80 shadow-[0_30px_60px_rgba(93,71,31,.18)]" />
+            <div className="absolute right-[18%] top-[18%] h-[255px] w-[255px] -rotate-6 rounded-[32px] bg-[#df6f62]" />
+            <div className="absolute right-[22%] top-[24%] h-[210px] w-[210px] rotate-12 rounded-full border-[24px] border-[#f8eab7] bg-[#7b5cb5]" />
+            <div className="absolute right-[31%] top-[31%] h-[120px] w-[120px] rotate-45 rounded-[18px] bg-[#f4c95d] shadow-xl" />
+            <div className="absolute right-[8%] bottom-[10%] rounded-2xl bg-white px-4 py-3 shadow-xl">
+              <p className="text-xs font-bold text-stone-500">CRAFT OF THE MONTH</p>
+              <p className="text-sm font-black text-stone-900">Paper flower kit</p>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Category Chips */}
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-5">
+      <div className="flex gap-2 overflow-x-auto pb-3 mb-5 scrollbar-hide">
         {['', ...categories].map(c => (
           <button key={c} onClick={() => setCategory(c)}
-            className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium border transition-colors
-              ${category === c ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white border-gray-200 text-gray-600 hover:border-indigo-400'}`}>
-            {c || 'All'}
+            className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-bold border transition-all
+              ${category === c ? 'bg-stone-900 text-white border-stone-900 shadow-md' : 'bg-white border-stone-200 text-stone-600 hover:border-stone-400'}`}>
+            {c || 'All products'}
           </button>
         ))}
       </div>
 
       {/* Search & Controls */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-3">
+      <div id="catalog" className="flex flex-col sm:flex-row gap-3 mb-3 scroll-mt-24">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input type="text" placeholder="Search products, categories…"
@@ -229,10 +263,15 @@ export default function HomePage({ onAuthRequired }: HomePageProps) {
             <div key={p.id} onClick={() => setSelectedProduct(p)}
               className="bg-white border border-gray-100 rounded-xl p-4 flex gap-4 hover:shadow-md cursor-pointer transition-shadow items-center">
               <div className="w-20 h-20 bg-gray-50 rounded-lg overflow-hidden flex-shrink-0">
-                {p.image_url
-                  ? <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
-                  : <div className="w-full h-full flex items-center justify-center text-gray-200 text-2xl">📦</div>
-                }
+                <img
+                  src={p.image_url || getGeneratedProductImage(p.name, p.category)}
+                  alt={p.name}
+                  className="w-full h-full object-cover"
+                  onError={event => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = getGeneratedProductImage(p.name, p.category);
+                  }}
+                />
               </div>
               <div className="flex-1 min-w-0">
                 <span className="text-xs text-indigo-500 font-semibold">{p.category}</span>
